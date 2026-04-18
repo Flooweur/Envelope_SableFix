@@ -1,5 +1,8 @@
 # Changelog
 
+## UNRELEASED
+- When moving mail recipe ingredients into a Package with JEI - address of the recipe will be remembered and applied when items are packed, consuming an Address Tag.    
+
 ## 0.6 - 2026-04-16
 #### Mail Recipes
 Added a new way to craft items by sending a Package with ingredients to the service address.
