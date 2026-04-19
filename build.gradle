@@ -79,10 +79,13 @@ subprojects {
             url = "https://raw.githubusercontent.com/Fuzss/modresources/main/maven/"
         }
 
+        // Create, Ponder, Flywheel
+        maven { url = "https://maven.createmod.net" }
+        // Registrate
+        maven { url = "https://maven.ithundxr.dev/snapshots" }
+
         // CarryOn
-        maven {
-            url "https://maven.blamejared.com/"
-        }
+        maven {url "https://maven.blamejared.com/"}
 
         // KubeJS
         maven {
@@ -97,6 +100,12 @@ subprojects {
             content {
                 includeGroup "com.github.rtyley"
             }
+        }
+
+        // Sable
+        maven {
+            name = "RyanHCode Maven"
+            url = "https://maven.ryanhcode.dev/releases"
         }
     }
 
