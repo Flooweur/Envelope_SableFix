@@ -4,12 +4,14 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.mortuusars.envelope.Config;
 import io.github.mortuusars.envelope.util.bugger.Bugger;
+import io.github.mortuusars.envelope.world.Position;
 import io.github.mortuusars.envelope.world.block.PigeonholeBlockEntity;
 import io.github.mortuusars.envelope.world.entity.Pigeon;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.CampfireBlock;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -23,6 +25,7 @@ public class PigeonholeHandler {
     public static final Codec<PigeonholeHandler> CODEC = RecordCodecBuilder.create(i -> i.group(
           BlockPos.CODEC.optionalFieldOf("current_pos").forGetter(o -> Optional.ofNullable(o.getTargetPos())),
           BlockPos.CODEC.optionalFieldOf("last_release_pos").forGetter(o -> Optional.ofNullable(o.getLastReleasePos())),
+          Codec.LONG.optionalFieldOf("last_tick_inside", 0L).forGetter(PigeonholeHandler::getLastTickInside),
           Codec.INT.optionalFieldOf("locate_cooldown", 0).forGetter(PigeonholeHandler::getLocateCooldown),
           Codec.INT.optionalFieldOf("want_cooldown", 0).forGetter(PigeonholeHandler::getWantCooldown),
           Codec.INT.optionalFieldOf("enter_cooldown", 0).forGetter(PigeonholeHandler::getEnterCooldown)
@@ -32,11 +35,12 @@ public class PigeonholeHandler {
 
     protected @Nullable BlockPos targetPos;
     protected @Nullable BlockPos lastReleasePos;
+    protected long lastTickInside;
     protected int locateCooldown;
     protected int wantCooldown;
     protected int enterCooldown;
 
-    public PigeonholeHandler(Optional<BlockPos> targetPos, Optional<BlockPos> lastReleasePos,
+    public PigeonholeHandler(Optional<BlockPos> targetPos, Optional<BlockPos> lastReleasePos, long lastTickInside,
                              int locateCooldown, int wantCooldown, int enterCooldown) {
         this.targetPos = targetPos.orElse(null);
         this.lastReleasePos = lastReleasePos.orElse(null);
@@ -46,7 +50,7 @@ public class PigeonholeHandler {
     }
 
     public PigeonholeHandler() {
-        this(Optional.empty(), Optional.empty(), 0, 0, 0);
+        this(Optional.empty(), Optional.empty(), 0, 0, 0, 0);
     }
 
     public @Nullable BlockPos getTargetPos() {
@@ -63,6 +67,15 @@ public class PigeonholeHandler {
 
     public PigeonholeHandler setLastReleasePos(@Nullable BlockPos lastReleasePos) {
         this.lastReleasePos = lastReleasePos;
+        return this;
+    }
+
+    public long getLastTickInside() {
+        return lastTickInside;
+    }
+
+    public PigeonholeHandler setLastTickInside(long lastTickInside) {
+        this.lastTickInside = lastTickInside;
         return this;
     }
 
@@ -179,9 +192,16 @@ public class PigeonholeHandler {
         return "PigeonholeHandler{" +
               "currentPos=" + targetPos +
               ", lastReleasePos=" + lastReleasePos +
+              ", lastTickInside=" + lastTickInside +
               ", locateCooldown=" + locateCooldown +
               ", wantCooldown=" + wantCooldown +
               ", enterCooldown=" + enterCooldown +
               '}';
+    }
+
+    // --
+
+    public static boolean isPigeonholeSafe(Level level, BlockPos pos) {
+        return !CampfireBlock.isSmokeyPos(level, pos) && !Position.isFireNearby(level, pos);
     }
 }
