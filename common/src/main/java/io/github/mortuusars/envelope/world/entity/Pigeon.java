@@ -431,7 +431,7 @@ public class Pigeon extends Animal implements VariantHolder<PigeonVariant>, Flyi
 
     @Override
     public boolean isFlying() {
-        return !this.onGround();
+        return !this.onGround() && !isPassenger();
     }
 
     @Override
