@@ -40,6 +40,7 @@ dependencies {
     modLocalRuntime("maven.modrinth:jade:${jade_version}+neoforge")
     modLocalRuntime("maven.modrinth:cloth-config:15.0.140+neoforge")
     modLocalRuntime("maven.modrinth:simplefog:ywT5urX0")
+    modLocalRuntime("maven.modrinth:forgeshot:8jisLNKN")
     // modLocalRuntime("maven.modrinth:sodium:${sodium_version}-neoforge") // Doesn't want to work
     modLocalRuntime("tschipp.carryon:carryon-neoforge-${minecraft_version}:${carry_on_version}" )
 
