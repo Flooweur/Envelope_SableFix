@@ -44,6 +44,8 @@ dependencies {
     // modLocalRuntime("maven.modrinth:sodium:${sodium_version}-neoforge") // Doesn't want to work
     modLocalRuntime("tschipp.carryon:carryon-neoforge-${minecraft_version}:${carry_on_version}" )
 
+    modLocalRuntime("maven.modrinth:c2me-neoforge:0.3.0+alpha.0.91+1.21.1")
+
     // Create
     modLocalRuntime("com.simibubi.create:create-${minecraft_version}:${create_version}:slim") { transitive = false }
     modLocalRuntime("net.createmod.ponder:ponder-neoforge:${ponder_version}+mc${minecraft_version}")
