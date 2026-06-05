@@ -3,7 +3,7 @@ package io.github.mortuusars.envelope.world.mail.delivery;
 import com.google.common.base.Preconditions;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import io.github.mortuusars.envelope.world.Position;
+import io.github.mortuusars.envelope.integration.sable.MovingStructureCompat;
 import io.github.mortuusars.envelope.world.mail.address.Address;
 import io.github.mortuusars.envelope.world.mail.address.AddressLocation;
 import io.github.mortuusars.envelope.world.mail.MailService;
@@ -74,22 +74,29 @@ public class DeliveryRoute {
 
         Optional<BlockPos> senderPos = senderLocation.getPosition();
         Optional<BlockPos> recipientPos = recipientLocation.getPosition();
-        Optional<BlockPos> hubPos = getHubPosition(senderLocation, recipientLocation);
+        Optional<BlockPos> hubPos = getHubPosition(level, senderLocation, recipientLocation);
 
         return new DeliveryRoute(
               senderLocation,
               recipientLocation,
               senderPos,
               senderLocation.ascendTowards(level, hubPos),
-              senderLocation.getTravelDurationTo(hubPos),
+              getTravelDuration(level, senderLocation, hubPos),
               hubPos,
-              recipientLocation.getTravelDurationTo(hubPos),
+              getTravelDuration(level, recipientLocation, hubPos),
               recipientLocation.ascendTowards(level, hubPos),
               recipientPos);
     }
 
-    public static Optional<BlockPos> getHubPosition(AddressLocation senderLocation, AddressLocation recipientLocation) {
-        return senderLocation.getNearestHub().or(recipientLocation::getNearestHub);
+    public static Optional<BlockPos> getHubPosition(ServerLevel level, AddressLocation senderLocation, AddressLocation recipientLocation) {
+        return senderLocation.getNearestHub(level).or(() -> recipientLocation.getNearestHub(level));
+    }
+
+    private static TravelDuration getTravelDuration(ServerLevel level, AddressLocation location, Optional<BlockPos> target) {
+        if (location instanceof AddressLocation.Exact exact && target.isPresent()) {
+            return TravelDuration.basedOnDistance(exact.getDistanceTo(level, target.get()));
+        }
+        return location.getTravelDurationTo(target);
     }
 
     // --
@@ -170,9 +177,11 @@ public class DeliveryRoute {
     public record Segment(Optional<BlockPos> startPos, Optional<BlockPos> endPos) {
         public static final Segment EMPTY = new Segment(Optional.empty(), Optional.empty());
 
-        public Optional<BlockPos> getCurrentLocation(float progress) {
+        public Optional<BlockPos> getCurrentLocation(ServerLevel level, float progress) {
             if (startPos().isPresent() && endPos().isPresent()) {
-                Vec3 pos = Position.lerp(startPos().get(), endPos().get(), Mth.clamp(progress, 0, 1));
+                Vec3 start = MovingStructureCompat.getGlobalCenter(level, startPos().get());
+                Vec3 end = MovingStructureCompat.getGlobalCenter(level, endPos().get());
+                Vec3 pos = start.lerp(end, Mth.clamp(progress, 0, 1));
                 return Optional.of(BlockPos.containing(pos));
             }
             return Optional.empty();

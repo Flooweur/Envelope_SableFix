@@ -7,7 +7,9 @@ import io.github.mortuusars.envelope.world.block.mailbox.MailboxBlockEntity;
 import io.github.mortuusars.envelope.world.entity.Pigeon;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import io.github.mortuusars.envelope.integration.sable.MovingStructureCompat;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
@@ -65,7 +67,7 @@ public class MailboxHandler {
         }
 
         if (level instanceof ServerLevel && pigeon.tickCount % 20 == 0) {
-            if (!isMailboxValid(level, pigeon.blockPosition())) {
+            if (!isMailboxValid(level, pigeon.position())) {
                 setTargetPos(null);
             }
             Bugger.PIGEON_MAILBOX_HANDLER.send(pigeon.getId(), this);
@@ -86,10 +88,10 @@ public class MailboxHandler {
         return Optional.empty();
     }
 
-    public boolean isMailboxValid(Level level, BlockPos entityPos) {
+    public boolean isMailboxValid(Level level, Vec3 entityPos) {
         @Nullable BlockPos currentPos = getTargetPos();
         if (currentPos == null) return false;
-        if (!entityPos.closerThan(currentPos, 32)) return false;
+        if (!MovingStructureCompat.isWithinRange(level, entityPos, currentPos, 32)) return false;
         return level.getBlockEntity(currentPos) instanceof MailboxBlockEntity blockEntity
               && blockEntity.isAvailableForPickup();
     }

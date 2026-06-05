@@ -8,7 +8,9 @@ import io.github.mortuusars.envelope.Envelope;
 import io.github.mortuusars.envelope.util.Ticks;
 import io.github.mortuusars.envelope.util.bugger.Bugger;
 import io.github.mortuusars.envelope.world.Position;
+import io.github.mortuusars.envelope.integration.sable.MovingStructureCompat;
 import io.github.mortuusars.envelope.world.block.PigeonholeBlockEntity;
+import io.github.mortuusars.envelope.world.block.Pigeonholes;
 import io.github.mortuusars.envelope.world.entity.Pigeon;
 import net.minecraft.SharedConstants;
 import net.minecraft.core.BlockPos;
@@ -18,10 +20,14 @@ import net.minecraft.world.entity.ai.village.poi.PoiManager;
 import net.minecraft.world.entity.ai.village.poi.PoiRecord;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.CampfireBlock;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.phys.Vec3;
 import org.slf4j.Logger;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -142,7 +148,7 @@ public class PigeonholeHandler {
 
             if (pigeon.tickCount % 20 == 0) {
                 // This is important for the pigeon to forget its previous pigeonhole if far away or no longer existing
-                if (getTargetPos() != null && !pigeon.isDelivering() && !isPigeonholeValid(level, pigeon.blockPosition())) {
+                if (getTargetPos() != null && !pigeon.isDelivering() && !isPigeonholeValid(level, pigeon.position())) {
                     setTargetPos(null);
                 }
                 Bugger.PIGEON_PIGEONHOLE_HANDLER.send(pigeon.getId(), this);
@@ -152,14 +158,26 @@ public class PigeonholeHandler {
 
     // --
 
-    public List<BlockPos> findNearbyPigeonholesWithSpace(ServerLevel level, BlockPos pos) {
+    public List<BlockPos> findNearbyPigeonholesWithSpace(ServerLevel level, Vec3 origin) {
+        double range = 48;
+        Set<BlockPos> results = new LinkedHashSet<>();
+
+        Pigeonholes.of(level).findWithinRange(level, origin, range).stream()
+              .filter(PigeonholeBlockEntity::hasSpaceForAnotherOccupant)
+              .map(PigeonholeBlockEntity::getBlockPos)
+              .forEach(results::add);
+
         PoiManager poiManager = level.getPoiManager();
-        return poiManager.getInRange(holder ->
-                    holder.is(Envelope.PoiTypes.PIGEONHOLE), pos, 48, PoiManager.Occupancy.ANY)
+        BlockPos searchOrigin = BlockPos.containing(origin);
+        poiManager.getInRange(holder ->
+                    holder.is(Envelope.PoiTypes.PIGEONHOLE), searchOrigin, (int) range, PoiManager.Occupancy.ANY)
               .map(PoiRecord::getPos)
               .filter(p -> level.getBlockEntity(p) instanceof PigeonholeBlockEntity pigeonhole
                     && pigeonhole.hasSpaceForAnotherOccupant())
-              .sorted(Comparator.comparingDouble(p -> p.distSqr(pos)))
+              .forEach(results::add);
+
+        return results.stream()
+              .sorted(Comparator.comparingDouble(p -> MovingStructureCompat.distanceToSqr(level, origin, p)))
               .collect(Collectors.toList());
     }
 
@@ -179,10 +197,10 @@ public class PigeonholeHandler {
         return (wouldPreferInside || tiredOfOutside);
     }
 
-    public boolean isPigeonholeValid(Level level, BlockPos entityPos) {
+    public boolean isPigeonholeValid(Level level, Vec3 entityPos) {
         @Nullable BlockPos currentPos = getTargetPos();
         if (currentPos == null) return false;
-        if (!entityPos.closerThan(currentPos, 32)) return false;
+        if (!MovingStructureCompat.isWithinRange(level, entityPos, currentPos, 32)) return false;
         return level.getBlockEntity(currentPos) instanceof PigeonholeBlockEntity;
     }
 

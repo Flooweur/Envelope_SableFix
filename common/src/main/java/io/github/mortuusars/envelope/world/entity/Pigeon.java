@@ -3,6 +3,7 @@ package io.github.mortuusars.envelope.world.entity;
 import com.mojang.logging.LogUtils;
 import io.github.mortuusars.envelope.Config;
 import io.github.mortuusars.envelope.Envelope;
+import io.github.mortuusars.envelope.integration.sable.MovingStructureCompat;
 import io.github.mortuusars.envelope.util.Ticks;
 import io.github.mortuusars.envelope.util.bugger.Bugger;
 import io.github.mortuusars.envelope.world.Position;
@@ -535,52 +536,64 @@ public class Pigeon extends Animal implements VariantHolder<Holder<PigeonVariant
         return new Vec3(0.0, getEyeHeight() * 0.65F, getBbWidth() * 0.4F);
     }
 
-    public boolean hasReachedTarget(BlockPos pos) {
-        return hasReachedTarget(pos, 2);
+    public boolean hasReachedTarget(BlockPos localPos) {
+        return hasReachedTarget(localPos, 2);
     }
 
-    protected boolean hasReachedTarget(BlockPos pos, double distance) {
-        if (closerThan(pos, distance)) {
+    protected boolean hasReachedTarget(BlockPos localPos, double distance) {
+        if (closerThan(localPos, distance)) {
             return true;
-        } else {
-            Path path = getNavigation().getPath();
-            return path != null && path.getTarget().equals(pos) && path.canReach() && path.isDone();
         }
+        Path path = getNavigation().getPath();
+        return path != null
+              && path.canReach()
+              && path.isDone()
+              && path.getTarget().equals(getNavigationTarget(localPos));
     }
 
-    public boolean closerThan(BlockPos pos, double distance) {
-        return pos.closerThan(blockPosition(), distance);
+    public boolean closerThan(BlockPos localPos, double distance) {
+        return MovingStructureCompat.isWithinRange(level(), position(), localPos, distance);
     }
 
-    public boolean pathfindDirectlyTowards(BlockPos pos) {
+    public BlockPos getNavigationTarget(BlockPos localPos) {
+        return BlockPos.containing(MovingStructureCompat.getGlobalCenter(level(), localPos));
+    }
+
+    public boolean isNavigatingTowards(BlockPos localPos) {
+        return getNavigation().isInProgress()
+              && getNavigationTarget(localPos).equals(getNavigation().getTargetPos());
+    }
+
+    public boolean pathfindDirectlyTowards(BlockPos localPos) {
+        Vec3 target = MovingStructureCompat.getGlobalCenter(level(), localPos);
         getNavigation().setMaxVisitedNodesMultiplier(10.0F);
-        getNavigation().moveTo(pos.getX(), pos.getY(), pos.getZ(), 1, 1);
+        getNavigation().moveTo(target.x, target.y, target.z, 1, 1);
         return getNavigation().getPath() != null && getNavigation().getPath().canReach();
     }
 
-    public void pathfindRandomlyTowards(BlockPos pos) {
-        Vec3 vec3 = Vec3.atBottomCenterOf(pos);
-        int i = 0;
-        BlockPos blockPos = this.blockPosition();
-        int j = (int) vec3.y - blockPos.getY();
-        if (j > 2) {
-            i = 4;
-        } else if (j < -2) {
-            i = -4;
+    public void pathfindRandomlyTowards(BlockPos localPos) {
+        Vec3 target = MovingStructureCompat.getGlobalCenter(level(), localPos);
+        Vec3 entityPos = position();
+        int verticalBias = 0;
+        int deltaY = (int) target.y - (int) entityPos.y;
+        if (deltaY > 2) {
+            verticalBias = 4;
+        } else if (deltaY < -2) {
+            verticalBias = -4;
         }
 
-        int k = 6;
-        int l = 8;
-        int m = blockPos.distManhattan(pos);
-        if (m < 15) {
-            k = m / 2;
-            l = m / 2;
+        int horizontalRange = 6;
+        int verticalRange = 8;
+        double distance = Math.sqrt(entityPos.distanceToSqr(target));
+        if (distance < 15) {
+            horizontalRange = (int) distance / 2;
+            verticalRange = (int) distance / 2;
         }
 
-        Vec3 vec32 = AirRandomPos.getPosTowards(this, k, l, i, vec3, (float) (Math.PI / 10));
-        if (vec32 != null) {
-            this.navigation.setMaxVisitedNodesMultiplier(1.0F);
-            this.navigation.moveTo(vec32.x, vec32.y, vec32.z, 1);
+        Vec3 waypoint = AirRandomPos.getPosTowards(this, horizontalRange, verticalRange, verticalBias, target, (float) (Math.PI / 10));
+        if (waypoint != null) {
+            navigation.setMaxVisitedNodesMultiplier(1.0F);
+            navigation.moveTo(waypoint.x, waypoint.y, waypoint.z, 1);
         }
     }
 

@@ -46,7 +46,7 @@ public class PigeonGoToMailboxGoal extends AbstractGoToBlockGoal {
         }
 
         if (!pigeon.closerThan(handler.getTargetPos(), 16)) {
-            if (!pigeon.blockPosition().closerThan(handler.getTargetPos(), 32)) {
+            if (!pigeon.closerThan(handler.getTargetPos(), 32)) {
                 handler.dropMailbox();
             } else {
                 pigeon.pathfindRandomlyTowards(handler.getTargetPos());

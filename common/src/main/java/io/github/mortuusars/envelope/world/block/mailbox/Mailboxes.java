@@ -2,18 +2,22 @@ package io.github.mortuusars.envelope.world.block.mailbox;
 
 import com.mojang.logging.LogUtils;
 import io.github.mortuusars.envelope.Envelope;
+import io.github.mortuusars.envelope.integration.sable.MovingStructureCompat;
 import io.github.mortuusars.envelope.world.mail.address.Address;
 import io.github.mortuusars.envelope.world.mail.address.AddressUniquifier;
 import io.github.mortuusars.envelope.world.mail.address.AllAddresses;
 import io.github.mortuusars.envelope.world.mail.MailService;
 import io.github.mortuusars.envelope.world.mail.address.type.BlockAddress;
+import io.github.mortuusars.envelope.world.block.mailbox.MailboxBlockEntity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Mailboxes {
     protected static final Logger LOGGER = LogUtils.getLogger();
@@ -144,6 +148,17 @@ public class Mailboxes {
               .flatMap(pos -> level.isLoaded(pos) && level.getBlockEntity(pos) instanceof MailboxBlockEntity blockEntity
                     ? Optional.of(blockEntity)
                     : Optional.empty());
+    }
+
+    public List<BlockPos> findNearbyAvailable(ServerLevel level, Vec3 origin, double range) {
+        double rangeSqr = range * range;
+        return getMailboxes().values().stream()
+              .map(RegisteredMailbox::getPos)
+              .filter(pos -> MovingStructureCompat.distanceToSqr(level, origin, pos) <= rangeSqr)
+              .filter(pos -> level.getBlockEntity(pos) instanceof MailboxBlockEntity mailbox
+                    && mailbox.isAvailableForPickup())
+              .sorted(Comparator.comparingDouble(pos -> MovingStructureCompat.distanceToSqr(level, origin, pos)))
+              .collect(Collectors.toList());
     }
 
     // --

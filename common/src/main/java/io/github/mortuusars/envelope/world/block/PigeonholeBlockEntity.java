@@ -114,6 +114,22 @@ public class PigeonholeBlockEntity extends BlockEntity implements PigeonOccupiab
         saveOccupiable(tag, registries);
     }
 
+    @Override
+    public void clearRemoved() {
+        super.clearRemoved();
+        if (level instanceof ServerLevel serverLevel) {
+            Pigeonholes.of(serverLevel).register(this);
+        }
+    }
+
+    @Override
+    public void setRemoved() {
+        if (level instanceof ServerLevel serverLevel) {
+            Pigeonholes.of(serverLevel).unregister(this);
+        }
+        super.setRemoved();
+    }
+
     // --
 
     public @NotNull Level getLevelOrThrow() {

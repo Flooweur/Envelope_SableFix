@@ -13,6 +13,7 @@ import io.github.mortuusars.envelope.world.mail.address.AllAddresses;
 import io.github.mortuusars.envelope.world.mail.address.type.*;
 import io.github.mortuusars.envelope.world.mail.service.ServiceAddresses;
 import io.github.mortuusars.envelope.world.mail.payback.PaybackDepartment;
+import io.github.mortuusars.envelope.world.block.Pigeonholes;
 import io.github.mortuusars.envelope.world.block.mailbox.Mailboxes;
 import io.github.mortuusars.envelope.world.KnownPlayers;
 import net.minecraft.ChatFormatting;
@@ -34,6 +35,7 @@ public class MailService {
     protected final ServerLevel level;
 
     protected final Mailboxes mailboxes;
+    protected final Pigeonholes pigeonholes;
     protected final ServiceAddresses serviceAddresses;
     protected final DeliveryManager deliveryManager;
     protected final PaybackDepartment paybackDepartment;
@@ -45,6 +47,7 @@ public class MailService {
         Preconditions.checkArgument(operatesIn(level), "MailService cannot exist in the '" + level.dimension().location() + "' dimension.");
         this.level = level;
         this.mailboxes = new Mailboxes(level);
+        this.pigeonholes = new Pigeonholes();
         this.serviceAddresses = new ServiceAddresses(this);
         this.deliveryManager = new DeliveryManager(this);
         this.paybackDepartment = new PaybackDepartment(this);
@@ -84,6 +87,10 @@ public class MailService {
 
     public Mailboxes getMailboxes() {
         return mailboxes;
+    }
+
+    public Pigeonholes getPigeonholes() {
+        return pigeonholes;
     }
 
     public ServiceAddresses getServiceAddresses() {

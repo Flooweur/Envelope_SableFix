@@ -4,6 +4,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import io.github.mortuusars.envelope.Config;
+import io.github.mortuusars.envelope.integration.sable.MovingStructureCompat;
 import io.github.mortuusars.envelope.world.Position;
 import io.github.mortuusars.envelope.world.mail.delivery.TravelDuration;
 import net.minecraft.core.BlockPos;
@@ -37,15 +38,15 @@ public interface AddressLocation {
         return TravelDuration.basedOnDistance(getDistanceTo(pos));
     }
 
-    default Optional<BlockPos> getNearestHub() {
-        return getPosition().map(pos -> Position.snapToGrid(pos, 1024).atY(320));
+    default Optional<BlockPos> getNearestHub(Level level) {
+        return getPosition().map(pos -> MovingStructureCompat.nearestHub(level, pos));
     }
 
     default Optional<BlockPos> ascendTowards(Level level, Optional<BlockPos> targetPos) {
         return getPosition().map(pos -> targetPos
-                    .map(blockPos -> Position.ascendTowards(pos, blockPos, ASCEND_DISTANCE))
+                    .map(blockPos -> MovingStructureCompat.ascendTowards(level, pos, blockPos, ASCEND_DISTANCE))
                     .orElseGet(() -> Position.towardsRandomHorizontalDirection(pos, ASCEND_DISTANCE, hashCode())))
-              .map(pos -> Position.aboveGround(level, pos, 5));
+              .map(ascendPos -> Position.aboveGround(level, ascendPos, 5));
     }
 
     // --
@@ -72,6 +73,10 @@ public interface AddressLocation {
         @Override
         public int getDistanceTo(BlockPos pos) {
             return Position.getDistanceBetween(this.pos, pos);
+        }
+
+        public int getDistanceTo(Level level, BlockPos pos) {
+            return MovingStructureCompat.getDistanceBetween(level, this.pos, pos);
         }
     }
 

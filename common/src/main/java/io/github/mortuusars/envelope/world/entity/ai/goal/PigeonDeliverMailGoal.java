@@ -51,23 +51,24 @@ public class PigeonDeliverMailGoal extends Goal {
             pigeon().tickDelivery(level, delivery);
 
             delivery.getRoute().getSegment(delivery.getPhase()).endPos()
-                  .ifPresentOrElse(pos -> {
+                  .ifPresentOrElse(endPos -> {
+                      BlockPos targetPos = endPos;
                       if (delivery.getPhase().isDescending()) {
-                          BlockState state = level.getBlockState(pos);
+                          BlockState state = level.getBlockState(endPos);
                           if (state.getBlock() instanceof MailboxBlock) {
-                              pos.relative(state.getValue(MailboxBlock.FACING));
+                              targetPos = endPos.relative(state.getValue(MailboxBlock.FACING));
                           }
                       }
 
                       if ((delivery.getPhase().isAscending() || delivery.getPhase().isDescending())
-                            && pigeon.hasReachedTarget(pos)) {
+                            && pigeon.hasReachedTarget(targetPos)) {
                           // Complete the phase instantly
                           delivery.setPhaseProgress(pigeon().getPhaseDuration(level, delivery, delivery.getPhase()));
                           return;
                       }
 
-                      if (!pigeon.getNavigation().isInProgress() || !pos.equals(pigeon.getNavigation().getTargetPos())) {
-                          pigeon.pathfindDirectlyTowards(pos);
+                      if (!pigeon.isNavigatingTowards(targetPos)) {
+                          pigeon.pathfindDirectlyTowards(targetPos);
                       }
                   }, () -> {
                       @Nullable Vec3 randomPos = AirAndWaterRandomPos.getPos(pigeon, 8, 4, -2,

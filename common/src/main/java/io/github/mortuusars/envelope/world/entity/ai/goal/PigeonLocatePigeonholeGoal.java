@@ -30,7 +30,7 @@ public class PigeonLocatePigeonholeGoal extends Goal {
     public void start() {
         pigeon.getPigeonholeHandler().resetLocateCooldown();
         List<BlockPos> nearbyPigeonholes = pigeon.getPigeonholeHandler()
-              .findNearbyPigeonholesWithSpace((ServerLevel)pigeon.level(), pigeon.blockPosition());
+              .findNearbyPigeonholesWithSpace((ServerLevel) pigeon.level(), pigeon.position());
 
         if (!nearbyPigeonholes.isEmpty()) {
             for (BlockPos pos : nearbyPigeonholes) {
